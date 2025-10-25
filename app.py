@@ -3,23 +3,20 @@ import numpy as np
 from flask import Flask, render_template, request
 from tensorflow.keras.models import load_model
 import cv2
-from skimage.feature import hog
 import joblib
+import tensorflow as tf
 
 app = Flask(__name__)
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Load pre-trained models
+# Load models
 cnn_model = load_model("model/cnn_model.h5")
 svm_model = joblib.load("model/svm_model.joblib")
 
-# HOG feature extractor
-def extract_hog_features(img_path):
-    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-    img = cv2.resize(img, (64, 64))
-    features = hog(img, pixels_per_cell=(8, 8), cells_per_block=(2, 2))
-    return features
+# Feature extractor (Dense(128))
+feature_extractor = tf.keras.Model(inputs=cnn_model.input,
+                                   outputs=cnn_model.layers[-3].output)
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -28,23 +25,25 @@ def index():
         if not file:
             return render_template("index.html", label=None, confidence=None, error="Please upload an image!")
 
-        # Save image
+        # Save uploaded image
         img_path = os.path.join(UPLOAD_FOLDER, file.filename)
         file.save(img_path)
 
-        # CNN Prediction
+        # Preprocess image for CNN
         img = cv2.imread(img_path)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, (128, 128))
         img = np.expand_dims(img, axis=0) / 255.0
-        cnn_pred = cnn_model.predict(img)[0][0]
 
-        # SVM Prediction
-        hog_features = extract_hog_features(img_path).reshape(1, -1)
-        svm_pred = svm_model.predict_proba(hog_features)[0][1]
+        # CNN prediction
+        cnn_pred = float(cnn_model.predict(img)[0][0])
 
-        # Combine predictions
-        avg_confidence = float((cnn_pred + svm_pred) / 2)
+        # SVM prediction (CNN features)
+        svm_features = feature_extractor.predict(img)
+        svm_pred = float(svm_model.predict_proba(svm_features)[0][1])
+
+        # Average confidence
+        avg_confidence = (cnn_pred + svm_pred) / 2
         label = "Fake" if avg_confidence > 0.5 else "Real"
 
         return render_template(
