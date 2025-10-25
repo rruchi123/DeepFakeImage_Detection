@@ -1,17 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>DeepFake Detector - README</title>
-<style>
-  body { font-family: Arial, sans-serif; background: #f5f5f5; color: #333; line-height: 1.6; margin: 20px; }
-  h1, h2 { color: #0077cc; }
-  code { background: #eee; padding: 2px 6px; border-radius: 4px; }
-  pre { background: #eee; padding: 10px; border-radius: 6px; overflow-x: auto; }
-  ul { margin-bottom: 20px; }
-</style>
-</head>
-<body>
+
 
 <h1>DeepFake Detector</h1>
 
@@ -50,3 +37,4 @@ cd ML_Project</code></pre>
 
 </body>
 </html>
+
